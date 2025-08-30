@@ -1,0 +1,55 @@
+{
+  "name": "family-office-ai-workflow",
+  "version": "1.0.0",
+  "description": "Family office AI workflow system with TypeScript implementation",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist/",
+    "start": "npm run build && node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "bin": {
+    "openbanking-fetcher": "./dist/openbanking-fetcher.js",
+    "analyze-orchestrator": "./dist/analyze-orchestrator.js",
+    "portfolio-orchestrator": "./dist/portfolio-orchestrator.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "commander": "^11.1.0",
+    "date-fns": "^2.30.0",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.15.0",
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.10"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "eslint": "^8.56.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "family-office",
+    "portfolio-management",
+    "powens-api",
+    "financial-analysis",
+    "typescript"
+  ],
+  "author": "Family Office AI Workflow",
+  "license": "UNLICENSED",
+  "private": true
+}

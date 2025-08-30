@@ -1,0 +1,35 @@
+{
+  "crypto": {
+    "symbols": ["ETH", "BTC", "USDC", "USDT", "DAI", "WBTC", "WETH", "MATIC", "POLYGON"],
+    "names": ["ETHEREUM", "BITCOIN", "CRYPTO", "TOKEN", "COIN", "DEFI", "STAKING", "LIQUIDITY POOL"]
+  },
+  "private_equity": {
+    "symbols": [],
+    "names": ["PRIVATE", "PE FUND", "VENTURE", "BUYOUT"]
+  },
+  "real_estate": {
+    "symbols": [],
+    "names": ["REIT", "REAL ESTATE", "PROPERTY", "REALTY"]
+  },
+  "funds": {
+    "symbols": [],
+    "names": ["ETF", "UCITS", "INDEX", "TRACKER", "MUTUAL FUND", "FUND"]
+  },
+  "alternative_credit": {
+    "symbols": [],
+    "names": ["CORPORATE BOND", "PRIVATE DEBT", "CREDIT", "BOND"]
+  },
+  "categorization": {
+    "real_estate": ["reit", "real estate", "property"],
+    "funds": ["etf", "index", "fund"],
+    "private_equity": ["private", "pe fund"],
+    "private_debt": ["bond", "debt", "credit"],
+    "crowdfunding": ["crowdfunding", "crowd"]
+  },
+  "thresholds": {
+    "significance_percent": 5.0,
+    "significance_value_eur": 1000.0,
+    "min_position_eur": 100.0,
+    "transaction_threshold_eur": 1000.0
+  }
+}

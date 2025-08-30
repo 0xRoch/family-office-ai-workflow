@@ -1,0 +1,66 @@
+# Environment variables (contain API credentials)
+.env
+.env.bak
+
+# Data files (contain sensitive financial information)
+data/
+!data/.gitkeep
+
+# Reports (may contain personal financial data)
+reports/
+!reports/.gitkeep
+
+# Configuration files (contain personal asset patterns)
+config/asset-patterns.json
+
+# Powens state files
+.powens_state
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# TypeScript/Node.js build artifacts
+dist/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Claude Code directories (but keep agents)
+.claude/
+!.claude/agents/
+!.claude/agents/*.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+workflow.log
+
+# Temporary files
+*.tmp
+*.bak
+*~
