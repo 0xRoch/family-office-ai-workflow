@@ -29,7 +29,7 @@
     "fs-extra": "^11.2.0",
     "glob": "^10.3.10",
     "ink": "^4.4.1",
-    "react": "^18.2.0"
+    "react": "^19.2.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
