@@ -134,6 +134,23 @@ npm run dev            # Development mode with auto-reload
 npm run typecheck      # Type checking only
 ```
 
+## Portfolio CLI Tracker
+
+Display the latest consolidated positions from `data/positions.json` in a rich terminal UI built with [Ink](https://github.com/vadimdemedes/ink).
+
+```bash
+# Compile TypeScript sources (required before running the CLI)
+npm run build
+
+# Show portfolio snapshot using the default data/positions.json
+npx portfolio-cli
+
+# Or point to a custom positions file and currency code
+npx portfolio-cli --file path/to/positions.json --currency USD
+```
+
+> **Note:** Install the new runtime dependencies locally (`npm install`) if you have not already done so. The CLI gracefully reports when the positions file is missing or empty.
+
 ## Supported Providers
 
 ### Banking APIs
