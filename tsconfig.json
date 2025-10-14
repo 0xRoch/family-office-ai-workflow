@@ -26,6 +26,7 @@
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
     "moduleResolution": "node",
+    "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

@@ -17,7 +17,8 @@
   "bin": {
     "openbanking-fetcher": "./dist/openbanking-fetcher.js",
     "analyze-orchestrator": "./dist/analyze-orchestrator.js",
-    "portfolio-orchestrator": "./dist/portfolio-orchestrator.js"
+    "portfolio-orchestrator": "./dist/portfolio-orchestrator.js",
+    "portfolio-cli": "./dist/cli.js"
   },
   "dependencies": {
     "axios": "^1.6.2",
@@ -26,11 +27,14 @@
     "dotenv": "^16.3.1",
     "ethers": "^6.15.0",
     "fs-extra": "^11.2.0",
-    "glob": "^10.3.10"
+    "glob": "^10.3.10",
+    "ink": "^4.4.1",
+    "react": "^18.2.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
     "@typescript-eslint/eslint-plugin": "^6.16.0",
     "@typescript-eslint/parser": "^6.16.0",
     "eslint": "^8.56.0",
