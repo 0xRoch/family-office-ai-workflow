@@ -36,7 +36,7 @@
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
-    "@typescript-eslint/parser": "^6.16.0",
+    "@typescript-eslint/parser": "^8.46.4",
     "eslint": "^9.39.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
