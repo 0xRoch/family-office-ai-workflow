@@ -29,12 +29,12 @@
     "fs-extra": "^11.2.0",
     "glob": "^10.3.10",
     "ink": "^4.4.1",
-    "react": "^18.2.0"
+    "react": "^19.2.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.10.5",
-    "@types/react": "^18.2.45",
+    "@types/react": "^19.2.2",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^6.16.0",
     "eslint": "^9.39.1",
