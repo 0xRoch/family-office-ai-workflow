@@ -28,7 +28,7 @@
     "ethers": "^6.15.0",
     "fs-extra": "^11.2.0",
     "glob": "^10.3.10",
-    "ink": "^4.4.1",
+    "ink": "^6.5.0",
     "react": "^18.2.0"
   },
   "devDependencies": {
