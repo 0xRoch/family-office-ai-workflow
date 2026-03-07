@@ -10,7 +10,28 @@ export interface PositionChange {
   oldShares?: number;
   newShares?: number;
   percentChange?: number;
+  userContext?: UserChangeContext;
 }
+
+export interface UserChangeContext {
+  reason: ChangeReason;
+  notes?: string;
+  timestamp: string;
+}
+
+export type ChangeReason =
+  | 'rebalancing'
+  | 'tax_loss_harvest'
+  | 'tax_gain_harvest'
+  | 'thesis_change'
+  | 'profit_taking'
+  | 'adding_to_winner'
+  | 'averaging_down'
+  | 'new_opportunity'
+  | 'liquidity_need'
+  | 'risk_reduction'
+  | 'dividend_reinvestment'
+  | 'other';
 
 export interface Position {
   symbol: string;
@@ -67,11 +88,20 @@ export interface LedgerEntry {
   change_type?: string;
   value?: number;
   shares?: number;
+  userContext?: UserChangeContext;
 }
 
 export interface Ledger {
   entries: LedgerEntry[];
   schema: Record<string, any>;
+}
+
+export interface PendingChanges {
+  fetchId: string;
+  timestamp: string;
+  changes: PositionChange[];
+  portfolioValue: number;
+  changeFromLastRun: number;
 }
 
 export interface PowensConfig {

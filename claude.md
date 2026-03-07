@@ -17,6 +17,7 @@ This family office system uses AI agents to analyze financial positions and prov
 
 **Key Features:**
 - **Change Detection**: Compares new vs previous positions to identify meaningful changes
+- **User Context Collection**: Prompts user for reasoning behind position changes (rebalancing, tax-loss harvest, thesis change, etc.)
 - **Smart Logging**: Records actual portfolio metrics (not empty summaries) to ledger.json
 - **Position Tracking**: Logs new/closed positions and significant movements (>5% or >€1,000)
 - **History Snapshots**: Saves timestamped position snapshots in `data/positions_history/`
@@ -136,10 +137,28 @@ CRYPTO_WALLETS=0xAddress1,0xAddress2,0xAddress3
 ```bash
 /portfolio-run              # Complete workflow
 /portfolio-run fetch        # Data collection only
-/portfolio-run analyze      # Analysis only  
+/portfolio-run analyze      # Analysis only
 /portfolio-run decide       # Decision generation only
 /portfolio-run status       # Show portfolio status
+/portfolio-run context      # Review pending changes needing user context
 ```
+
+**User Context for Position Changes:**
+After fetching data, if position changes are detected (new positions, closed positions, share changes), the system prompts for user reasoning. Available reasons:
+- `rebalancing` - Portfolio rebalancing
+- `tax_loss_harvest` - Tax-loss harvesting
+- `tax_gain_harvest` - Tax-gain harvesting
+- `thesis_change` - Investment thesis changed
+- `profit_taking` - Taking profits
+- `adding_to_winner` - Adding to winning position
+- `averaging_down` - Averaging down on position
+- `new_opportunity` - New investment opportunity
+- `liquidity_need` - Liquidity needs
+- `risk_reduction` - Risk reduction
+- `dividend_reinvestment` - Dividend reinvestment
+- `other` - Other reason (add notes)
+
+This context is stored in the ledger and used by analyst agents to understand the rationale behind trades.
 
 ### Alternative: Bash Script
 ```bash
@@ -209,12 +228,14 @@ CRYPTO_WALLETS=0xAddress1,0xAddress2,0xAddress3
 ## File Structure
 ```
 data/
-├── positions.json      # Current consolidated positions (traditional + crypto)
-├── ledger.json        # Complete transaction and decision log
+├── positions.json       # Current consolidated positions (traditional + crypto)
+├── ledger.json          # Complete transaction and decision log
+├── pending_changes.json # Position changes awaiting user context (temporary)
+├── positions_history/   # Timestamped position snapshots
 reports/
-├── [YYYY-MM-DD]/      # Daily report archives
-│   ├── [SYMBOL].md    # Individual equity reports
-│   └── portfolio.md   # Aggregate portfolio analysis
+├── [YYYY-MM-DD]/        # Daily report archives
+│   ├── [SYMBOL].md      # Individual position analysis reports
+│   └── portfolio.md     # Aggregate portfolio optimization report
 ```
 
 ## Data Policy

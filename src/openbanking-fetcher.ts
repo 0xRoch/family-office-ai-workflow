@@ -19,7 +19,9 @@ import {
   Ledger,
   PowensConfig,
   PowensInvestmentData,
-  CryptoPosition
+  CryptoPosition,
+  PendingChanges,
+  UserChangeContext
 } from './types';
 import { SmartCryptoFetcher } from './crypto-fetcher';
 
@@ -364,6 +366,81 @@ export class OpenBankingFetcher {
     } catch (error) {
       console.error(`Error saving snapshot: ${error}`);
     }
+  }
+
+  /**
+   * Save pending changes that need user context
+   */
+  async savePendingChanges(
+    pendingChangesFile: string,
+    runId: string,
+    changes: PositionChange[],
+    portfolioValue: number,
+    changeFromLastRun: number
+  ): Promise<void> {
+    // Only save actionable changes (new positions, closed positions, share changes)
+    const actionableChanges = changes.filter(c =>
+      c.type === 'new' || c.type === 'closed' || c.type === 'share_change'
+    );
+
+    if (actionableChanges.length === 0) {
+      // Clear any existing pending changes file
+      if (await fs.pathExists(pendingChangesFile)) {
+        await fs.remove(pendingChangesFile);
+      }
+      return;
+    }
+
+    const pendingData: PendingChanges = {
+      fetchId: runId,
+      timestamp: new Date().toISOString(),
+      changes: actionableChanges,
+      portfolioValue,
+      changeFromLastRun
+    };
+
+    await fs.writeJSON(pendingChangesFile, pendingData, { spaces: 2 });
+    console.log(`📝 Saved ${actionableChanges.length} position changes pending user context`);
+  }
+
+  /**
+   * Update ledger entries with user-provided context
+   */
+  static async updateWithUserContext(
+    ledgerFile: string,
+    pendingChangesFile: string,
+    contextMap: Record<string, UserChangeContext>
+  ): Promise<void> {
+    if (!(await fs.pathExists(ledgerFile))) {
+      console.error('Ledger file not found');
+      return;
+    }
+
+    const ledger: Ledger = await fs.readJSON(ledgerFile);
+    const pending: PendingChanges = await fs.pathExists(pendingChangesFile)
+      ? await fs.readJSON(pendingChangesFile)
+      : null;
+
+    if (!pending) {
+      console.log('No pending changes to update');
+      return;
+    }
+
+    // Update ledger entries that match the pending changes
+    let updatedCount = 0;
+    for (const entry of ledger.entries) {
+      if (entry.symbol && contextMap[entry.symbol] && entry.id.startsWith(pending.fetchId)) {
+        entry.userContext = contextMap[entry.symbol];
+        updatedCount++;
+      }
+    }
+
+    await fs.writeJSON(ledgerFile, ledger, { spaces: 2 });
+
+    // Clear pending changes after processing
+    await fs.remove(pendingChangesFile);
+
+    console.log(`✓ Updated ${updatedCount} ledger entries with user context`);
   }
 
   /**
@@ -799,6 +876,16 @@ export class OpenBankingFetcher {
       },
       notes: `Fetched ${totalPositions} positions, portfolio value: €${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
     }, runId);
+
+    // Save pending changes for user context collection
+    const pendingChangesFile = path.join(path.dirname(positionsFile), 'pending_changes.json');
+    await this.savePendingChanges(
+      pendingChangesFile,
+      runId,
+      significantChanges,
+      newTotal,
+      newTotal - previousTotal
+    );
 
     // Save updated positions file
     await fs.writeJSON(positionsFile, newData, { spaces: 2 });
