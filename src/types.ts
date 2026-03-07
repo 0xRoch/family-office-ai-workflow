@@ -135,6 +135,21 @@ export interface PowensAccountData {
   balance?: number;
 }
 
+export interface PowensTransaction {
+  id: number;
+  id_account: number;
+  date: string;
+  value: number;
+  original_wording: string;
+  wording: string;
+  type: string;
+  formatted_value: string;
+  coming: boolean;
+  active: boolean;
+  // Enriched field (added by fetcher)
+  account_name?: string;
+}
+
 export interface AnalysisRequest {
   symbol: string;
   name: string;

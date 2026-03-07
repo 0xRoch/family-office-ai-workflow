@@ -19,6 +19,7 @@ import {
   Ledger,
   PowensConfig,
   PowensInvestmentData,
+  PowensTransaction,
   CryptoPosition,
   PendingChanges,
   UserChangeContext
@@ -221,6 +222,58 @@ export class OpenBankingFetcher {
       console.error(`Error fetching investments: ${error}`);
       return { investments: [], valuation: 0 };
     }
+  }
+
+  /**
+   * Fetch transactions for a list of account IDs
+   */
+  async fetchTransactions(accountIds: number[], accounts: any[]): Promise<PowensTransaction[]> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated');
+    }
+
+    // Build account name lookup
+    const accountNames: Record<number, string> = {};
+    for (const acc of accounts) {
+      accountNames[acc.id] = acc.original_name || acc.name || `Account ${acc.id}`;
+    }
+
+    const results = await Promise.all(
+      accountIds.map(async (accountId) => {
+        try {
+          const response: AxiosResponse = await axios.get(
+            `${this.baseUrl}/users/${this.config.user_id}/accounts/${accountId}/transactions`,
+            {
+              params: { limit: 100 },
+              headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json'
+              },
+              timeout: 30000
+            }
+          );
+
+          if (response.status === 200) {
+            const transactions: PowensTransaction[] = response.data.transactions || [];
+            // Enrich with account name
+            return transactions.map(t => ({
+              ...t,
+              account_name: accountNames[accountId] || `Account ${accountId}`
+            }));
+          }
+          return [];
+        } catch (error) {
+          console.error(`Error fetching transactions for account ${accountId}: ${error}`);
+          return [];
+        }
+      })
+    );
+
+    // Flatten and sort by date descending
+    const allTransactions = results.flat();
+    allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return allTransactions;
   }
 
   /**
@@ -708,6 +761,20 @@ export class OpenBankingFetcher {
 
     // Transform to internal format
     const newData = this.transformToInternalFormat(accounts, investments);
+
+    // Fetch transactions for deduplicated accounts only
+    const deduplicatedAccountIds = newData.accounts.map((a: any) => a.id as number);
+    try {
+      const transactions = await this.fetchTransactions(deduplicatedAccountIds, newData.accounts);
+      const transactionsFile = path.join(path.dirname(positionsFile), 'transactions.json');
+      await fs.writeJSON(transactionsFile, {
+        lastUpdated: new Date().toISOString(),
+        transactions
+      }, { spaces: 2 });
+      console.log(`✓ Fetched ${transactions.length} transactions across ${deduplicatedAccountIds.length} accounts`);
+    } catch (error) {
+      console.error(`⚠️  Failed to fetch transactions: ${error}`);
+    }
 
     // Fetch crypto positions if configured
     if (SmartCryptoFetcher.isCryptoConfigured()) {
