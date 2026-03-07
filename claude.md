@@ -224,6 +224,46 @@ reports/
 - All portfolio analysis must be based on actual connected accounts
 - If no data is available, report empty state - do not simulate
 
+## Data Validation & Integrity
+
+**CRITICAL: Prevent Incomplete Data Corruption**
+
+The workflow includes safeguards to prevent analysis on incomplete or corrupted data:
+
+### Fetch Phase Validation
+**OpenBanking Fetcher** performs sanity checks before overwriting `positions.json`:
+- **Position Count Check**: Aborts if >30% of positions disappear (likely partial fetch)
+- **Portfolio Value Check**: Aborts if >20% value drop + >10% position loss (suspicious)
+- **Preserves Previous Data**: On validation failure, keeps existing `positions.json` intact
+
+**Example Scenario Prevented**:
+```
+Previous: 20 positions, €500k
+API timeout returns: 5 positions, €100k (-75% positions, -80% value)
+→ System detects suspicious drop and ABORTS
+→ Logs error: "Likely partial fetch - aborting to protect data integrity"
+→ User prompted to wait for sync or re-authenticate
+```
+
+### Analysis Phase Validation
+**Before analyzing positions**, workflow checks:
+- `positions.json` exists and is valid JSON
+- Data structure is complete (has `.positions` field)
+- Warns if data is >7 days old (stale data)
+- Warns if portfolio value is €0 (incomplete fetch)
+
+### Recovery from Failed Fetch
+If fetch fails validation:
+1. Previous `positions.json` remains unchanged (safe)
+2. Workflow stops with clear error message
+3. User can:
+   - Wait 5-10 minutes for bank sync to complete
+   - Check connection: `./workflow.sh status`
+   - Re-authenticate: `./workflow.sh setup`
+   - Retry: `./workflow.sh fetch`
+
+**Key Principle**: Better to stop with clear error than proceed with incomplete data leading to wrong investment recommendations.
+
 ## Implementation Notes
 
 ### TypeScript Architecture (Current)

@@ -674,7 +674,79 @@ export class OpenBankingFetcher {
       console.log('📝 No crypto wallets configured, skipping crypto data collection');
     }
 
+    // Merge manual positions that can't be fetched via open banking
+    const manualPositionsFile = path.join(path.dirname(positionsFile), 'manual_positions.json');
+    if (await fs.pathExists(manualPositionsFile)) {
+      try {
+        const manualData = await fs.readJSON(manualPositionsFile);
+        let manualTotal = 0;
+        let manualCount = 0;
+        const validCategories: Array<keyof PortfolioPositions> = [
+          'equities', 'funds', 'bonds', 'cash', 'private_equity',
+          'private_debt', 'real_estate', 'crowdfunding', 'crypto'
+        ];
+        for (const category of validCategories) {
+          const manualItems = manualData[category];
+          if (!Array.isArray(manualItems) || manualItems.length === 0) continue;
+          if (!newData.positions[category]) {
+            newData.positions[category] = [];
+          }
+          const existing = newData.positions[category];
+          for (const item of manualItems) {
+            // Deduplicate by (symbol + account) pair — same ISIN in different accounts (e.g. TTE in PEA vs company) must NOT be merged
+            const alreadyPresent = existing.some((p: Position | CryptoPosition) => p.symbol === item.symbol && ('account' in p ? p.account : '') === item.account);
+            if (!alreadyPresent) {
+              existing.push(item);
+              manualTotal += item.marketValue || 0;
+              manualCount++;
+            }
+          }
+        }
+        newData.totalNetWorth += manualTotal;
+        console.log(`✓ Merged ${manualCount} manual positions (€${manualTotal.toFixed(2)}) from manual_positions.json`);
+      } catch (error) {
+        console.error('⚠️  Failed to load manual_positions.json:', error);
+      }
+    }
+
     const newTotal = newData.totalNetWorth || 0;
+
+    // CRITICAL: Validate data completeness before overwriting
+    const previousPositionCount = Object.values(previousData.positions).reduce((sum, positions) => sum + positions.length, 0);
+    const newPositionCount = Object.values(newData.positions).reduce((sum, positions) => sum + positions.length, 0);
+
+    // Sanity check: Detect suspicious data drops that might indicate partial fetch
+    if (previousPositionCount > 0 && newPositionCount > 0) {
+      const positionDropPercent = ((previousPositionCount - newPositionCount) / previousPositionCount) * 100;
+      const valueDropPercent = previousTotal > 0 ? ((previousTotal - newTotal) / previousTotal) * 100 : 0;
+
+      // Flag suspicious drops: >30% position loss or >20% value loss
+      if (positionDropPercent > 30 || (valueDropPercent > 20 && positionDropPercent > 10)) {
+        console.error('⚠️  SUSPICIOUS DATA DETECTED - Possible partial fetch:');
+        console.error(`   Previous: ${previousPositionCount} positions, €${previousTotal.toLocaleString()}`);
+        console.error(`   New: ${newPositionCount} positions, €${newTotal.toLocaleString()}`);
+        console.error(`   Change: ${positionDropPercent.toFixed(1)}% position drop, ${valueDropPercent.toFixed(1)}% value drop`);
+        console.error('');
+        console.error('This likely indicates:');
+        console.error('  - API timeout or partial sync');
+        console.error('  - Bank connection needs refresh');
+        console.error('  - Data synchronization still in progress');
+        console.error('');
+        console.error('❌ SAFETY: Aborting to prevent overwriting valid data with incomplete fetch');
+        console.error('   Your previous positions.json is preserved.');
+        console.error('');
+        console.error('Solutions:');
+        console.error('  1. Wait 5-10 minutes for bank data to sync, then retry');
+        console.error('  2. Check bank connection status: ./workflow.sh status');
+        console.error('  3. Re-authenticate: ./workflow.sh setup');
+
+        await this.logToLedger(ledgerFile, 'data_collection', 'failed', {
+          notes: `Suspicious data drop detected: ${positionDropPercent.toFixed(1)}% positions, ${valueDropPercent.toFixed(1)}% value. Likely partial fetch - aborting to protect data integrity.`
+        });
+
+        return false;
+      }
+    }
 
     // Detect changes
     const changes = this.detectChanges(previousData, newData);

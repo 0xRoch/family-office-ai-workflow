@@ -905,7 +905,33 @@ EOF
 # Analysis phase with parallel processing
 analyze_positions() {
     log "Starting analysis phase..."
-    
+
+    # VALIDATION: Ensure positions.json exists and is valid
+    if [[ ! -f "$DATA_DIR/positions.json" ]]; then
+        log_error "No positions data found. Run './workflow.sh fetch' first."
+        return 1
+    fi
+
+    # Check if positions.json is reasonably fresh (warn if >7 days old)
+    local file_age=$(($(date +%s) - $(stat -f %m "$DATA_DIR/positions.json" 2>/dev/null || stat -c %Y "$DATA_DIR/positions.json" 2>/dev/null || echo 0)))
+    local days_old=$((file_age / 86400))
+
+    if [[ $days_old -gt 7 ]]; then
+        log_warning "Positions data is $days_old days old. Consider running './workflow.sh fetch' for fresh data."
+    fi
+
+    # Validate JSON structure
+    if ! jq -e '.positions' "$DATA_DIR/positions.json" >/dev/null 2>&1; then
+        log_error "positions.json is corrupted or invalid. Please run './workflow.sh fetch' to regenerate."
+        return 1
+    fi
+
+    local total_value=$(jq -r '.totalNetWorth // 0' "$DATA_DIR/positions.json")
+    if [[ "$total_value" == "0" ]]; then
+        log_warning "Portfolio total value is €0 - this may indicate incomplete data fetch"
+        log "Proceeding with analysis but results may be limited..."
+    fi
+
     # Extract all positions from positions.json (equities, funds, private equity, private debt, real estate)
     local equities=$(jq -r '.positions.equities[].symbol' "$DATA_DIR/positions.json" 2>/dev/null || echo "")
     local funds=$(jq -r '.positions.funds[].symbol' "$DATA_DIR/positions.json" 2>/dev/null || echo "")
@@ -992,7 +1018,7 @@ EOF
         log "Next: Use Claude Code to process all analysis requests in parallel"
     fi
     
-    log_success "Analysis orchestrator complete - ready for parallel execution"
+    log_success "Analysis orchestrator launched - reports will be generated in parallel"
 }
 
 # Portfolio value validation function
