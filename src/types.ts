@@ -180,6 +180,8 @@ export interface Recommendations {
     upside?: number;
   }>;
   specific_actions: string[];
+  confidence_levels?: Record<string, string>;
+  timeframes?: Record<string, string>;
 }
 
 // Crypto-specific interfaces

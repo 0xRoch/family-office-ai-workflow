@@ -53,9 +53,10 @@ USAGE:
     ./workflow.sh [COMMAND]
 
 COMMANDS:
-    full        Run complete workflow (default)
-    fetch       Data collection only  
+    full        Run complete workflow (fetch + analyze + discover + decide)
+    fetch       Data collection only
     analyze     Analysis only (requires existing data)
+    discover    Portfolio discovery - find new opportunities
     decide      Portfolio optimization only
     setup       Initialize Powens connection
     callback    Process Powens callback URL
@@ -63,9 +64,10 @@ COMMANDS:
     help        Show this help message
 
 EXAMPLES:
-    ./workflow.sh              # Full workflow
+    ./workflow.sh              # Full workflow (includes discovery)
     ./workflow.sh fetch        # Update positions data
     ./workflow.sh analyze      # Generate equity research reports
+    ./workflow.sh discover     # Find new investment opportunities
     ./workflow.sh status       # Show current positions
 
 EOF
@@ -1017,8 +1019,63 @@ EOF
         echo "Request directory: $request_dir" >> "$REPORT_DIR/analysis.log"
         log "Next: Use Claude Code to process all analysis requests in parallel"
     fi
-    
+
     log_success "Analysis orchestrator launched - reports will be generated in parallel"
+}
+
+# Portfolio discovery phase - find new investment opportunities
+discover_opportunities() {
+    log "Starting portfolio discovery phase..."
+
+    # VALIDATION: Ensure positions.json exists and is valid
+    if [[ ! -f "$DATA_DIR/positions.json" ]]; then
+        log_error "No positions data found. Run './workflow.sh fetch' first."
+        return 1
+    fi
+
+    # Validate JSON structure
+    if ! jq -e '.positions' "$DATA_DIR/positions.json" >/dev/null 2>&1; then
+        log_error "positions.json is corrupted or invalid. Please run './workflow.sh fetch' to regenerate."
+        return 1
+    fi
+
+    # Check data freshness for discovery (more critical than analysis)
+    local file_age=$(($(date +%s) - $(stat -f %m "$DATA_DIR/positions.json" 2>/dev/null || stat -c %Y "$DATA_DIR/positions.json" 2>/dev/null || echo 0)))
+    local days_old=$((file_age / 86400))
+
+    if [[ $days_old -gt 1 ]]; then
+        log_warning "Portfolio data is $days_old days old. Discovery works best with fresh data."
+        log "Consider running './workflow.sh fetch' before discovery for most accurate gap analysis."
+    fi
+
+    if [[ ! -d "$REPORT_DIR" ]]; then
+        log_warning "No analysis reports found - discovery will work but benefits from existing reports"
+    fi
+
+    # Print instructions for Claude Code to invoke the portfolio-researcher agent
+    log "Launching portfolio-researcher agent..."
+    echo ""
+    echo "=== PORTFOLIO DISCOVERY ==="
+    echo ""
+    echo "AGENT: portfolio-researcher"
+    echo "DATE: $RUN_DATE"
+    echo ""
+    echo "INPUT FILES:"
+    echo "  - Positions: $DATA_DIR/positions.json"
+    echo "  - Ledger: $DATA_DIR/ledger.json"
+    echo "  - Existing reports: $REPORT_DIR/"
+    echo ""
+    echo "OUTPUT:"
+    echo "  - Save report to: $REPORT_DIR/NEW_OPPORTUNITIES.md"
+    echo ""
+    echo "TASK: Analyze current portfolio for concentration risks and missing exposures."
+    echo "Propose 3-5 specific investment opportunities with real ISINs/tickers,"
+    echo "concrete allocations, and entry strategies aligned with family office principles."
+    echo ""
+    echo "=== END DISCOVERY REQUEST ==="
+
+    log_success "Discovery phase ready - invoke portfolio-researcher agent with the context above"
+    return 0
 }
 
 # Portfolio value validation function
@@ -1179,7 +1236,7 @@ main() {
     case "$command" in
         "full"|"")
             check_dependencies
-            if fetch_data && analyze_positions && optimize_portfolio; then
+            if fetch_data && analyze_positions && discover_opportunities && optimize_portfolio; then
                 log_success "Full workflow completed. Reports saved to: $REPORT_DIR"
             else
                 log_error "Workflow failed. Check the error messages above."
@@ -1193,6 +1250,10 @@ main() {
         "analyze")
             check_dependencies
             analyze_positions
+            ;;
+        "discover")
+            check_dependencies
+            discover_opportunities
             ;;
         "decide")
             check_dependencies

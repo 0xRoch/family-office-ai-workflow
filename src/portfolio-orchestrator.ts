@@ -52,7 +52,7 @@ export class PortfolioOrchestrator {
   }
 
   /**
-   * Collect all individual analysis reports
+   * Collect all individual analysis reports including NEW_OPPORTUNITIES.md
    */
   async collectAnalysisReports(reportsDir: string): Promise<Record<string, ReportData>> {
     const reports: Record<string, ReportData> = {};
@@ -77,6 +77,24 @@ export class PortfolioOrchestrator {
       }
     }
 
+    // Check for NEW_OPPORTUNITIES.md (portfolio discovery report)
+    const opportunitiesFile = path.join(reportsDir, 'NEW_OPPORTUNITIES.md');
+    if (await fs.pathExists(opportunitiesFile)) {
+      try {
+        const content = await fs.readFile(opportunitiesFile, 'utf-8');
+        reports['NEW_OPPORTUNITIES'] = {
+          file: opportunitiesFile,
+          content,
+          symbol: 'NEW_OPPORTUNITIES'
+        };
+        console.log('✓ Found NEW_OPPORTUNITIES.md - will include discovery recommendations');
+      } catch (error) {
+        console.log(`Warning: Could not read NEW_OPPORTUNITIES.md: ${error}`);
+      }
+    } else {
+      console.log('ℹ️  No NEW_OPPORTUNITIES.md found - portfolio discovery not run');
+    }
+
     return reports;
   }
 
@@ -89,7 +107,9 @@ export class PortfolioOrchestrator {
       hold: [],
       sell: [],
       target_prices: {},
-      specific_actions: []
+      specific_actions: [],
+      confidence_levels: {} as Record<string, string>,
+      timeframes: {} as Record<string, string>
     };
 
     for (const [symbol, reportData] of Object.entries(reports)) {
@@ -123,6 +143,21 @@ export class PortfolioOrchestrator {
         }
 
         recommendations.target_prices[symbol] = targetPrice;
+      }
+
+      // Extract confidence levels (simplified - 2 patterns)
+      const confidenceMatch = content.match(/\*\*Confidence Level:?\*\*\s*\*?\*?(HIGH|MEDIUM|LOW)\*?\*?/i) ||
+                              content.match(/Confidence:?\s*\*?\*?(HIGH|MEDIUM|LOW)\*?\*?/i);
+      if (confidenceMatch && recommendations.confidence_levels) {
+        recommendations.confidence_levels[symbol] = confidenceMatch[1].toUpperCase();
+      }
+
+      // Extract timeframe (simplified)
+      const timeframeMatch = content.match(/Time(?:frame|horizon):?\s*(\d+-?\d*\s*months?)/i);
+      if (timeframeMatch && recommendations.timeframes) {
+        recommendations.timeframes[symbol] = timeframeMatch[1];
+      } else if (content.match(/12-month|12 month/i) && recommendations.timeframes) {
+        recommendations.timeframes[symbol] = '12 months';
       }
 
       // Extract crypto/DeFi yield optimization opportunities
@@ -243,6 +278,67 @@ export class PortfolioOrchestrator {
   }
 
   /**
+   * Resolve symbol to actual position details with robust matching
+   */
+  resolvePositionDetails(
+    symbol: string,
+    positionDetails: Record<string, PositionDetail>
+  ): PositionDetail {
+    // 1. Try exact match first
+    if (positionDetails[symbol]) {
+      return positionDetails[symbol];
+    }
+
+    // 2. Try ISIN prefix matching (e.g., FR0000130403 matches any key starting with it)
+    if (symbol.match(/^[A-Z]{2}\d{10}/)) {
+      const isinMatch = Object.keys(positionDetails).find(key =>
+        key.startsWith(symbol.substring(0, 12)) || symbol.startsWith(key.substring(0, 12))
+      );
+      if (isinMatch) {
+        return positionDetails[isinMatch];
+      }
+    }
+
+    // 3. Try crypto symbol variations
+    // Handle cbETH, ETH-base, ETH-ethereum, wstETH, etc.
+    const cryptoBaseSymbols = ['ETH', 'BTC', 'USDC', 'USDT', 'DAI', 'WBTC'];
+    for (const baseSymbol of cryptoBaseSymbols) {
+      if (symbol.toUpperCase().includes(baseSymbol)) {
+        const cryptoMatch = Object.keys(positionDetails).find(key =>
+          key.toUpperCase().includes(baseSymbol)
+        );
+        if (cryptoMatch) {
+          return positionDetails[cryptoMatch];
+        }
+      }
+    }
+
+    // 4. Try partial symbol match (case-insensitive)
+    const partialMatch = Object.keys(positionDetails).find(key =>
+      key.toLowerCase().includes(symbol.toLowerCase()) ||
+      symbol.toLowerCase().includes(key.toLowerCase())
+    );
+    if (partialMatch) {
+      return positionDetails[partialMatch];
+    }
+
+    // 5. Try name-based matching
+    const nameMatch = Object.entries(positionDetails).find(([, details]) =>
+      details.name && (
+        details.name.toLowerCase().includes(symbol.toLowerCase()) ||
+        symbol.toLowerCase().includes(details.name.toLowerCase())
+      )
+    );
+    if (nameMatch) {
+      return nameMatch[1];
+    }
+
+    // 6. No match found - return placeholder with original symbol
+    console.log(`⚠️  Warning: Could not resolve symbol "${symbol}" to any position`);
+    return { name: symbol, value: 0, shares: 0, price: 0 };
+  }
+
+  /**
    * Create the portfolio optimization report directly with enhanced validation
    */
   async createPortfolioReportDirectly(
@@ -303,48 +399,84 @@ export class PortfolioOrchestrator {
 
 ## ACTIONABLE RECOMMENDATIONS
 
-### Immediate BUY Actions
-${recs.buy.length > 0 ? recs.buy.map(symbol => {
-  // Try to find position by symbol, or search by partial match for crypto
-  let detail = positionDetails[symbol];
-  if (!detail || detail.value === 0) {
-    // Try to find by partial symbol match (e.g., ETH-base -> cbETH)
-    const matchKey = Object.keys(positionDetails).find(key =>
-      key.toLowerCase().includes(symbol.toLowerCase().replace('-base', '').replace('-ethereum', '')) ||
-      symbol.toLowerCase().includes(key.toLowerCase())
-    );
-    if (matchKey) detail = positionDetails[matchKey];
-  }
-  if (!detail) detail = { name: symbol, value: 0, shares: 0, price: 0 };
-
+### 🎯 High-Priority BUY Recommendations
+${recs.buy.length > 0 ? recs.buy.slice(0, 5).map((symbol, index) => {
+  const detail = this.resolvePositionDetails(symbol, positionDetails);
   const targetInfo = recs.target_prices[symbol];
-  const targetText = targetInfo && targetInfo.upside
-    ? ` - Target: €${targetInfo.price.toFixed(0)} (${targetInfo.upside.toFixed(1)}% upside)`
-    : '';
-  return `**${symbol}** - ${detail.name} (€${detail.value.toLocaleString()})${targetText}`;
-}).join('\n') : '- No immediate BUY recommendations'}
+  const confidence = recs.confidence_levels?.[symbol] || '';
+  const timeframe = recs.timeframes?.[symbol] || '12 months';
 
-### Current HOLD Positions
-${recs.hold.length > 0 ? recs.hold.map(symbol => {
-  // Try to find position by symbol, or search by partial match for crypto
-  let detail = positionDetails[symbol];
-  if (!detail || detail.value === 0) {
-    const matchKey = Object.keys(positionDetails).find(key =>
-      key.toLowerCase().includes(symbol.toLowerCase().replace('-base', '').replace('-ethereum', '')) ||
-      symbol.toLowerCase().includes(key.toLowerCase())
-    );
-    if (matchKey) detail = positionDetails[matchKey];
-  }
-  if (!detail) detail = { name: symbol, value: 0, shares: 0, price: 0 };
+  const upsideText = targetInfo?.upside
+    ? `+${targetInfo.upside.toFixed(1)}% upside to €${targetInfo.price.toFixed(0)}`
+    : 'See report for target';
 
-  return `**${symbol}** - ${detail.name} (€${detail.value.toLocaleString()}) - Maintain current allocation`;
-}).join('\n') : '- No HOLD recommendations'}
+  const confText = confidence ? ` | Confidence: ${confidence}` : '';
 
-### SELL Recommendations
-${recs.sell.length > 0 ? recs.sell.map(symbol => {
-  const detail = positionDetails[symbol] || { name: symbol, value: 0 };
-  return `**${symbol}** - ${detail.name} (€${detail.value.toLocaleString()})`;
-}).join('\n') : '- No SELL recommendations at this time'}
+  return `#### ${index + 1}. ${detail.name} (${symbol})
+- Current: €${detail.value.toLocaleString()}${detail.shares > 0 ? ` (${detail.shares} shares @ €${detail.price.toFixed(2)})` : ' (not held)'}
+- Target: ${upsideText} | ${timeframe}${confText}
+- Action: ${detail.value === 0 ? 'Initiate position' : 'Add on weakness'}
+`;
+}).join('\n') : '**No immediate BUY opportunities.** Current positions are appropriately valued.'}
+
+### ⚠️ SELL Recommendations
+${recs.sell.length > 0 ? recs.sell.map((symbol, index) => {
+  const detail = this.resolvePositionDetails(symbol, positionDetails);
+  const confidence = recs.confidence_levels?.[symbol] || '';
+  const confText = confidence ? ` | Confidence: ${confidence}` : '';
+
+  return `#### ${index + 1}. ${detail.name} (${symbol})
+- Current: €${detail.value.toLocaleString()} (${((detail.value / totalValue) * 100).toFixed(2)}% of portfolio)${confText}
+- Action: Exit ${detail.value > 5000 ? 'gradually over 2-4 weeks' : 'immediately'}
+`;
+}).join('\n') : '**No SELL recommendations.** All holdings meet family office quality standards.'}
+
+### ✓ Current HOLD Positions (Maintain Allocation)
+${recs.hold.length > 0 ?
+  `Total HOLD positions: ${recs.hold.length} (€${recs.hold.reduce((sum, symbol) => sum + this.resolvePositionDetails(symbol, positionDetails).value, 0).toLocaleString()})
+
+**Top HOLD Positions by Value:**
+${recs.hold
+  .map(symbol => ({ symbol, detail: this.resolvePositionDetails(symbol, positionDetails) }))
+  .sort((a, b) => b.detail.value - a.detail.value)
+  .slice(0, 8)
+  .map((item, idx) => {
+    const confidence = recs.confidence_levels?.[item.symbol] || '';
+    const confText = confidence ? ` [${confidence} confidence]` : '';
+    return `${idx + 1}. **${item.detail.name}** (${item.symbol}) - €${item.detail.value.toLocaleString()} (${((item.detail.value / totalValue) * 100).toFixed(1)}%)${confText}`;
+  })
+  .join('\n')}
+
+*See individual reports for detailed analysis of all ${recs.hold.length} HOLD positions.*`
+  : '- No specific HOLD recommendations (review needed)'}
+
+## 💡 NEW INVESTMENT OPPORTUNITIES
+
+${reports['NEW_OPPORTUNITIES'] ? `
+${reports['NEW_OPPORTUNITIES'].content}
+
+**Implementation Approach:**
+- Review detailed opportunity analysis above from portfolio discovery agent
+- Validate ISINs and ensure broker availability before trading
+- Scale into positions over 4-8 weeks using DCA to minimize timing risk
+- Monitor entry points based on market conditions and technical levels
+- Consider tax implications (PEA eligibility, long-term cap gains) before executing
+
+**Why These Opportunities?**
+The portfolio researcher agent identified these based on:
+- Portfolio gap analysis showing concentration risks and missing exposures
+- Current macro environment and sector rotation opportunities
+- Family office principles: wealth preservation, diversification, tax efficiency
+- Specific actionable ideas with real ISINs/tickers (not generic suggestions)
+` : `
+**No discovery report available.** Run \`./workflow.sh discover\` to launch the portfolio researcher agent and identify new investment opportunities that address portfolio gaps.
+
+The discovery agent will:
+- Analyze concentration risks and missing sectors
+- Propose 3-5 specific opportunities with ISINs/tickers
+- Provide concrete allocations and entry strategies
+- Ensure alignment with family office principles
+`}
 
 ## YIELD OPTIMIZATION OPPORTUNITIES
 
@@ -403,7 +535,7 @@ ${Object.entries(positionDetails)
 
 ### Week 3-4: Execute Priority Actions
 ${recs.buy.length > 0 ? recs.buy.slice(0, 3).map(symbol => {
-  const detail = positionDetails[symbol] || { value: 0 };
+  const detail = this.resolvePositionDetails(symbol, positionDetails);
   return `- Execute BUY recommendation for ${symbol} (Current: €${detail.value.toLocaleString()})`;
 }).join('\n') : '- No immediate purchases required'}
 - Implement cost optimization measures identified

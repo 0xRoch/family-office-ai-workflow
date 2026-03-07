@@ -55,6 +55,27 @@ node scripts/openbanking_fetcher.js status
 **Agent File**: `.claude/agents/fund-analyst.md` (accessible via `agents/` symlink)
 **Purpose**: Analyze fund positions including expense ratios, performance metrics, and portfolio composition
 
+### Portfolio Researcher
+**Role**: Proactive investment opportunity discovery
+**Agent File**: `.claude/agents/portfolio-researcher.md` (accessible via `agents/` symlink)
+**Purpose**: Identify new investment opportunities by analyzing portfolio gaps, concentration risks, and missing exposures. Provides 3-5 specific actionable ideas with ISINs/tickers, rationale, and allocations.
+
+**Key Features:**
+- **Gap Analysis**: Identifies concentration risks, sector/geographic underweights, defensive positioning needs
+- **Specific Recommendations**: Real ISINs/tickers (not generic suggestions) with concrete allocation guidance
+- **Macro Overlay**: Considers interest rates, inflation, geopolitical trends, sector rotation
+- **Family Office Alignment**: Ensures recommendations fit wealth preservation, tax efficiency, diversification principles
+- **Actionable Output**: NEW_OPPORTUNITIES.md with implementation priority and entry strategies
+
+**Usage:**
+```bash
+# Via workflow (recommended)
+./workflow.sh discover
+
+# Full workflow includes discovery
+./workflow.sh full  # fetch → analyze → discover → decide
+```
+
 ### Private Equity Analyst
 **Role**: Private equity investment analysis
 **Agent File**: `.claude/agents/private-equity-analyst.md` (accessible via `agents/` symlink)
@@ -117,16 +138,32 @@ CRYPTO_WALLETS=0xAddress1,0xAddress2,0xAddress3
   - **Alternative positions**: Specialized agents for private equity, real estate, credit
 - Store individual research reports in `reports/` directory
 
-### 3. Decision Phase
-- Aggregate all research reports
+### 3. Discovery Phase (Proactive Opportunity Identification)
+- Launch `portfolio-researcher` agent to analyze current portfolio state
+- Identify concentration risks (positions >15%, top 3 holdings >35%, sector overweights)
+- Map missing exposures (underrepresented sectors, geographic gaps, defensive positioning)
+- Propose 3-5 specific new investment opportunities with:
+  - Real ISINs/tickers (not generic suggestions)
+  - Concrete allocation recommendations (% or EUR amounts)
+  - Data-driven investment thesis and entry strategies
+  - Confidence levels and expected timeframes
+- Generate `NEW_OPPORTUNITIES.md` report with actionable recommendations
+- Ensure alignment with family office principles (wealth preservation, tax efficiency, diversification)
+
+### 4. Decision Phase
+- Aggregate all research reports (including NEW_OPPORTUNITIES.md from discovery)
 - Apply portfolio optimization rules:
   - Minimize transaction frequency
   - Optimize for long-term value
   - Consider tax implications
   - Maintain diversification principles
-- Generate final recommendations
+- Generate final `portfolio.md` report with:
+  - BUY/HOLD/SELL recommendations on existing positions
+  - NEW INVESTMENT OPPORTUNITIES section (if discovery was run)
+  - Implementation timeline and priority ranking
+  - Expected portfolio impact (risk reduction, diversification gains)
 
-### 4. Logging Phase
+### 5. Logging Phase
 - Record all recommendations in ledger
 - Update position tracking
 - Archive reports with timestamps
@@ -135,9 +172,10 @@ CRYPTO_WALLETS=0xAddress1,0xAddress2,0xAddress3
 
 ### Claude Code Slash Command (Recommended)
 ```bash
-/portfolio-run              # Complete workflow
+/portfolio-run              # Complete workflow (fetch + analyze + discover + decide)
 /portfolio-run fetch        # Data collection only
 /portfolio-run analyze      # Analysis only
+/portfolio-run discover     # Portfolio discovery - find new opportunities
 /portfolio-run decide       # Decision generation only
 /portfolio-run status       # Show portfolio status
 /portfolio-run context      # Review pending changes needing user context
@@ -162,9 +200,10 @@ This context is stored in the ledger and used by analyst agents to understand th
 
 ### Alternative: Bash Script
 ```bash
-./workflow.sh               # Complete workflow
+./workflow.sh               # Complete workflow (fetch + analyze + discover + decide)
 ./workflow.sh fetch         # Data collection only (accounts + investments)
 ./workflow.sh analyze       # Analysis only
+./workflow.sh discover      # Portfolio discovery - find new opportunities
 ./workflow.sh decide        # Decision generation only
 ./workflow.sh status        # Show current status
 ```
@@ -235,6 +274,7 @@ data/
 reports/
 ├── [YYYY-MM-DD]/        # Daily report archives
 │   ├── [SYMBOL].md      # Individual position analysis reports
+│   ├── NEW_OPPORTUNITIES.md # Portfolio discovery recommendations
 │   └── portfolio.md     # Aggregate portfolio optimization report
 ```
 
@@ -272,6 +312,11 @@ API timeout returns: 5 positions, €100k (-75% positions, -80% value)
 - Data structure is complete (has `.positions` field)
 - Warns if data is >7 days old (stale data)
 - Warns if portfolio value is €0 (incomplete fetch)
+
+### Discovery Phase Validation
+**Before discovering opportunities**, workflow validates:
+- `positions.json` is valid and recent (<1 day for accurate gap analysis)
+- Recommends fresh fetch if data is stale
 
 ### Recovery from Failed Fetch
 If fetch fails validation:
