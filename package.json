@@ -22,7 +22,7 @@
     "dashboard": "./dist/dashboard.js"
   },
   "dependencies": {
-    "axios": "^1.6.2",
+    "axios": "^1.13.2",
     "commander": "^14.0.1",
     "date-fns": "^2.30.0",
     "dotenv": "^17.2.3",
