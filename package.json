@@ -18,7 +18,8 @@
     "openbanking-fetcher": "./dist/openbanking-fetcher.js",
     "analyze-orchestrator": "./dist/analyze-orchestrator.js",
     "portfolio-orchestrator": "./dist/portfolio-orchestrator.js",
-    "portfolio-cli": "./dist/cli.js"
+    "portfolio-cli": "./dist/cli.js",
+    "dashboard": "./dist/dashboard.js"
   },
   "dependencies": {
     "axios": "^1.6.2",
@@ -29,6 +30,7 @@
     "fs-extra": "^11.2.0",
     "glob": "^10.3.10",
     "ink": "^4.4.1",
+    "open": "^8.4.2",
     "react": "^18.2.0"
   },
   "devDependencies": {

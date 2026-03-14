@@ -61,6 +61,7 @@ COMMANDS:
     setup       Initialize Powens connection
     callback    Process Powens callback URL
     status      Show current portfolio status
+    dashboard   Open portfolio dashboard in browser
     help        Show this help message
 
 EXAMPLES:
@@ -1267,6 +1268,10 @@ main() {
             ;;
         "status")
             show_status
+            ;;
+        "dashboard")
+            log "Generating dashboard..."
+            node "$SCRIPT_DIR/dist/dashboard.js"
             ;;
         "help"|"-h"|"--help")
             usage
