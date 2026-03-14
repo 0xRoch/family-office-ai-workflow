@@ -4,12 +4,15 @@ A TypeScript-based family office system that uses AI agents to analyze financial
 
 ## Features
 
+- **Live Portfolio Dashboard**: Bloomberg-terminal-style web dashboard on port 3000 with real-time portfolio view, P&L tracking, allocation charts, and 15-year wealth projection
+- **Portfolio Discovery**: Proactive AI-driven opportunity identification — finds concentration risks, missing exposures, and recommends 3-5 specific new investments with ISINs/tickers
 - **Multi-Provider Banking Integration**: Connect to banking APIs (Powens, extensible for Plaid/TrueLayer)
 - **Multi-Chain Crypto Analysis**: Track cryptocurrency holdings across Ethereum, Base, Polygon, and Arbitrum
 - **Intelligent Change Detection**: Automatically detect and log meaningful portfolio changes
+- **Sequential Analysis with Health Checks**: Connection health verification before data collection, sequential execution for reliability
 - **Configurable Asset Classification**: Customizable patterns for categorizing investments
-- **Parallel Analysis**: Process multiple positions simultaneously using specialized AI agents
-- **Privacy-First**: Personal patterns and data stay local and private
+- **Specialist AI Agents**: Dedicated analysts for equities, funds, crypto, private equity, real estate, and alternative credit
+- **Privacy-First**: All personal financial data stays on your machine
 
 ## Quick Start
 
@@ -100,13 +103,15 @@ npm run build
 - **Real Estate Analyst**: Real estate investment analysis
 - **Private Equity Analyst**: Private equity position analysis
 - **Alternative Credit Analyst**: Credit and bond analysis
+- **Portfolio Researcher**: Proactive opportunity discovery and gap analysis
 
 ### Data Flow
-1. **Fetch**: Collect positions from banking APIs and blockchain networks
-2. **Detect**: Identify meaningful changes since last run
-3. **Analyze**: Process positions through appropriate specialist agents
-4. **Optimize**: Generate portfolio recommendations
-5. **Log**: Record all changes and recommendations with timestamps
+1. **Fetch**: Health-check connections, then collect positions from banking APIs and blockchain networks
+2. **Detect**: Identify meaningful changes since last run (new/closed positions, >5% movements)
+3. **Analyze**: Process positions sequentially through appropriate specialist agents
+4. **Discover**: Identify portfolio gaps, concentration risks, and propose new investment opportunities
+5. **Optimize**: Generate portfolio recommendations (BUY/HOLD/SELL + new opportunities)
+6. **Log**: Record all changes and recommendations with timestamps
 
 ## Privacy & Security
 
@@ -118,38 +123,45 @@ npm run build
 ## Commands
 
 ```bash
-# Complete workflow
+# Complete workflow (fetch → analyze → discover → decide)
 ./workflow.sh
 /portfolio-run
 
 # Individual phases
-./workflow.sh fetch     # Data collection only
-./workflow.sh analyze   # Analysis only
-./workflow.sh decide    # Decision generation only
-./workflow.sh status    # Show current status
+./workflow.sh fetch       # Data collection only
+./workflow.sh analyze     # Analysis only
+./workflow.sh discover    # Find new investment opportunities
+./workflow.sh decide      # Decision generation only
+./workflow.sh status      # Show current status
+./workflow.sh dashboard   # Open live portfolio dashboard
 
 # TypeScript development
-npm run build           # Compile TypeScript
-npm run dev            # Development mode with auto-reload
-npm run typecheck      # Type checking only
+npm run build             # Compile TypeScript
+npm run dev               # Development mode with auto-reload
+npm run typecheck         # Type checking only
+```
+
+## Live Portfolio Dashboard
+
+A Bloomberg-terminal-style web dashboard served on `http://localhost:3000` with:
+- Real-time portfolio overview with total value and P&L
+- Position-level detail with ratings and recommendations
+- Asset allocation breakdown charts
+- New investment opportunities from the discovery phase
+- 15-year wealth projection based on historical portfolio growth
+
+```bash
+./workflow.sh dashboard
 ```
 
 ## Portfolio CLI Tracker
 
-Display the latest consolidated positions from `data/positions.json` in a rich terminal UI built with [Ink](https://github.com/vadimdemedes/ink).
+Display positions from `data/positions.json` in a terminal UI built with [Ink](https://github.com/vadimdemedes/ink).
 
 ```bash
-# Compile TypeScript sources (required before running the CLI)
-npm run build
-
-# Show portfolio snapshot using the default data/positions.json
 npx portfolio-cli
-
-# Or point to a custom positions file and currency code
 npx portfolio-cli --file path/to/positions.json --currency USD
 ```
-
-> **Note:** Install the new runtime dependencies locally (`npm install`) if you have not already done so. The CLI gracefully reports when the positions file is missing or empty.
 
 ## Supported Providers
 
