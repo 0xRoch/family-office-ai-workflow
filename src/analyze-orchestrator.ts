@@ -215,8 +215,9 @@ export class AnalysisOrchestrator {
         console.log();
       }
 
-      console.log(`🚀 Execute ${positionDetails.length} agents in parallel for this batch`);
-      console.log('   Then proceed to next batch...\n');
+      console.log(`⏩ Execute these ${positionDetails.length} agents SEQUENTIALLY (one at a time, NOT in parallel)`);
+      console.log('   Wait for each agent to complete before starting the next.');
+      console.log('   Add a 10-second delay between each agent to avoid rate limits.\n');
 
       if (batchNum < numBatches - 1) {
         console.log('─'.repeat(50));
@@ -228,7 +229,7 @@ export class AnalysisOrchestrator {
   /**
    * Main orchestrator function
    */
-  async orchestrate(requestDir: string, reportDir: string = 'reports', batchSize: number = 5): Promise<void> {
+  async orchestrate(requestDir: string, reportDir: string = 'reports', batchSize: number = 1): Promise<void> {
     // Discover all positions dynamically
     const positions = await this.discoverPositions(requestDir);
 
@@ -243,8 +244,8 @@ export class AnalysisOrchestrator {
     console.log('✅ Orchestrator complete');
     console.log('📋 Next steps:');
     console.log('   1. Copy the Task tool calls above');
-    console.log('   2. Execute them in Claude Code in parallel batches');
-    console.log(`   3. Each batch will process ${batchSize} positions simultaneously`);
+    console.log('   2. Execute them in Claude Code SEQUENTIALLY (one at a time)');
+    console.log(`   3. Process 1 position at a time with 10s delay between each`);
     console.log(`   4. Reports will be saved to ${reportDir}/[SYMBOL].md`);
   }
 }

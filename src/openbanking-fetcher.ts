@@ -161,6 +161,65 @@ export class OpenBankingFetcher {
   }
 
   /**
+   * Check health of bank connections and warn about stale ones
+   */
+  async checkConnections(): Promise<{ healthy: boolean; staleConnections: any[] }> {
+    if (!this.accessToken) {
+      return { healthy: false, staleConnections: [] };
+    }
+
+    try {
+      const response: AxiosResponse = await axios.get(
+        `${this.baseUrl}/users/${this.config.user_id}/connections`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+
+      if (response.status !== 200) {
+        console.warn('⚠️  Could not check connection health');
+        return { healthy: true, staleConnections: [] };
+      }
+
+      const connections: any[] = response.data.connections || [];
+
+      // Filter for connections that were working (have last_update) but are now in error state
+      const staleConnections = connections.filter((conn: any) =>
+        conn.error && conn.last_update
+      );
+
+      if (staleConnections.length > 0) {
+        console.warn('');
+        console.warn('⚠️  CONNECTION HEALTH WARNING — Some bank connections need re-authentication:');
+        console.warn('');
+        for (const conn of staleConnections) {
+          const connectorName = conn.connector?.name || `Connection #${conn.id}`;
+          const lastSync = conn.last_update || 'unknown';
+          const errorMsg = conn.error_message || conn.error || 'unknown error';
+          console.warn(`   🔴 ${connectorName} (id: ${conn.id})`);
+          console.warn(`      State: ${conn.state || conn.error}`);
+          console.warn(`      Error: ${errorMsg}`);
+          console.warn(`      Last successful sync: ${lastSync}`);
+        }
+        console.warn('');
+        console.warn(`   → Re-authenticate at: https://webview.powens.com/connect`);
+        console.warn('   → Data from these connections may be stale or missing.');
+        console.warn('   → Continuing fetch with available data...');
+        console.warn('');
+      }
+
+      return { healthy: staleConnections.length === 0, staleConnections };
+    } catch (error) {
+      console.warn(`⚠️  Could not check connection health: ${error}`);
+      return { healthy: true, staleConnections: [] };
+    }
+  }
+
+  /**
    * Fetch account data from API
    */
   async fetchAccounts(): Promise<any[]> {
@@ -745,6 +804,9 @@ export class OpenBankingFetcher {
     }
 
     console.log('✓ Authentication successful');
+
+    // Check connection health before fetching
+    await this.checkConnections();
 
     // Fetch fresh data
     const accounts = await this.fetchAccounts();
