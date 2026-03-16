@@ -31,12 +31,12 @@
     "glob": "^10.3.10",
     "ink": "^4.4.1",
     "open": "^8.4.2",
-    "react": "^18.2.0"
+    "react": "^19.2.4"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.10.1",
-    "@types/react": "^18.2.45",
+    "@types/react": "^19.2.14",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^6.16.0",
     "eslint": "^9.39.1",
