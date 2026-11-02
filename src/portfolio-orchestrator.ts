@@ -9,7 +9,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as glob from 'glob';
 import { format } from 'date-fns';
-import { OptimizationRequest, PortfolioData, Recommendations } from './types';
+import { OptimizationRequest, PortfolioData, Recommendations } from './types.js';
 
 interface ReportData {
   file: string;

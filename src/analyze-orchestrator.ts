@@ -10,7 +10,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as glob from 'glob';
-import { AnalysisRequest, PositionDetails } from './types';
+import { AnalysisRequest, PositionDetails } from './types.js';
 
 interface AssetPatterns {
   crypto: { symbols: string[]; names: string[] };

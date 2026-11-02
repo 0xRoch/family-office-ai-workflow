@@ -11,7 +11,6 @@
 import axios from 'axios';
 import { ethers } from 'ethers';
 import * as fs from 'fs-extra';
-import * as path from 'path';
 import {
   CryptoPosition,
   WalletData,
@@ -233,7 +232,7 @@ export class SmartCryptoFetcher {
           coin.symbol?.toLowerCase() === symbol.toLowerCase()
         );
         coingeckoId = match?.id;
-      } catch (error) {
+      } catch {
         console.warn(`Could not find ${symbol} on CoinGecko`);
       }
 

@@ -5,10 +5,10 @@
  * Main entry point for the TypeScript-based family office system
  */
 
-export * from './types';
-export * from './openbanking-fetcher';
-export * from './analyze-orchestrator';
-export * from './portfolio-orchestrator';
+export * from './types.js';
+export * from './openbanking-fetcher.js';
+export * from './analyze-orchestrator.js';
+export * from './portfolio-orchestrator.js';
 
 // Main entry point for standalone execution
 if (require.main === module) {

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "module": "commonjs",
+    "module": "nodenext",
     "lib": [
       "es2020",
       "dom"
@@ -25,7 +25,7 @@
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
