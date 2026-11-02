@@ -1,12 +1,17 @@
 #!/usr/bin/env node
-// @ts-nocheck
+// @ts-nocheck Ink terminal UI is intentionally left unchecked.
 
 import path from 'path';
 import fs from 'fs-extra';
 import React, {useMemo} from 'react';
-import {render, Box, Text} from 'ink';
 import {Command} from 'commander';
-import {PortfolioData} from './types';
+import {PortfolioData} from './types.js';
+
+// Ink 8 is ESM-only and uses top-level await, so the CommonJS build cannot
+// require() it. Components close over these bindings, which are assigned
+// before render().
+let Box: any;
+let Text: any;
 
 const categoryEmojis: Record<string, string> = {
   equities: '📈',
@@ -35,7 +40,7 @@ const formatCurrency = (value: number, currency: string): string => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
-  } catch (error) {
+  } catch {
     // Fallback if the provided currency code is invalid
     return `${currency} ${value.toLocaleString('en-US', {
       minimumFractionDigits: 2,
@@ -220,6 +225,10 @@ const loadPortfolioData = async (filePath: string): Promise<PortfolioData | null
 };
 
 (async () => {
+  const ink = await import('ink');
+  Box = ink.Box;
+  Text = ink.Text;
+
   const positionsPath = resolvePositionsPath(options.file);
   let data: PortfolioData | null = null;
   let error: string | undefined;
@@ -234,7 +243,7 @@ const loadPortfolioData = async (filePath: string): Promise<PortfolioData | null
     error = readError.message ?? String(readError);
   }
 
-  const {waitUntilExit} = render(
+  const {waitUntilExit} = ink.render(
     <PortfolioApp data={data} error={error && data ? undefined : error} source={positionsPath} currency={options.currency} />
   );
 

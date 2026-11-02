@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as http from 'http';
 import { glob } from 'glob';
-import { PortfolioData, Position, LedgerEntry } from './types';
+import { PortfolioData, Position, LedgerEntry } from './types.js';
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const REPORTS_DIR = path.join(__dirname, '..', 'reports');
@@ -220,10 +220,6 @@ function getCategoryAllocations(data: PortfolioData): { category: string; value:
   return cats.sort((a, b) => b.value - a.value);
 }
 
-function formatEur(n: number): string {
-  return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
 // Old static generateHTML removed — replaced by generateShellHTML + /api/data
 
 function loadAllData() {
@@ -266,7 +262,7 @@ function buildProjection(currentValue: number): {
 }
 
 function buildApiData() {
-  const { portfolio, history, recommendations, opportunities, ledger } = loadAllData();
+  const { portfolio, recommendations, opportunities, ledger } = loadAllData();
   const allPositions = portfolio ? getAllPositions(portfolio) : [];
   const investedPositions = allPositions.filter(p => p.sector !== 'Cash');
   const totalInvested = investedPositions.reduce((s, p) => s + p.costBasis, 0);
@@ -641,11 +637,12 @@ async function main(): Promise<void> {
     }
   });
 
-  server.listen(PORT, () => {
+  server.listen(PORT, async () => {
     console.log(`Dashboard running at http://localhost:${PORT}`);
     console.log('Live-refreshing every 30s. Press Ctrl+C to stop.');
-    const open = require('open');
-    open(`http://localhost:${PORT}`);
+    // open@11 is ESM-only. Dynamic import works from this CommonJS build.
+    const {default: open} = await import('open');
+    await open(`http://localhost:${PORT}`);
   });
 }
 

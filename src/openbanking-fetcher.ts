@@ -23,8 +23,8 @@ import {
   CryptoPosition,
   PendingChanges,
   UserChangeContext
-} from './types';
-import { SmartCryptoFetcher } from './crypto-fetcher';
+} from './types.js';
+import { SmartCryptoFetcher } from './crypto-fetcher.js';
 
 interface CategorizationPatterns {
   real_estate: string[];
@@ -627,7 +627,6 @@ export class OpenBankingFetcher {
    */
   transformToInternalFormat(accountsData: any[], investmentsData: PowensInvestmentData): PortfolioData {
     const timestamp = new Date().toISOString();
-    const totalValuation = investmentsData.valuation || 0;
 
     // FIRST: Deduplicate accounts to get unique account IDs
     const uniqueAccounts: any[] = [];
