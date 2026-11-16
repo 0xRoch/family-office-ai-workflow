@@ -37,7 +37,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.72.1",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
     "@typescript-eslint/parser": "^8.72.1",
     "eslint": "^10.14.0",
     "ts-node": "^10.9.2",
